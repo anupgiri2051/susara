@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Susara POS Pro</title>
+<style>
+:root{ --brand:#2c3e50; --accent:#e67e22; --bg:#f4f6f7; --success:#27ae60; --danger:#e74c3c; }
+body{ margin:0; font-family:sans-serif; background:var(--bg); padding-bottom:180px; }
+
+/* Login Overlay Styles */
+#loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--brand); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+.login-box { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; }
+.login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
+.login-btn { width: 100%; background: var(--accent); color: white; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+.login-err { color: var(--danger); font-size: 0.85rem; margin-top: 8px; display: none; font-weight: bold; }
+
+/* Layout Design */
+#appContent { display: none; }
+nav{ background:var(--brand); color:white; padding:12px; display:flex; justify-content:space-between; align-items:center; }
+.container{ padding:10px; }
+.section{ margin-top:20px; font-weight:bold; color:var(--brand); border-left:4px solid var(--accent); padding-left:10px; text-transform: uppercase; font-size: 0.9rem; }
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+.item{ background:white; padding:12px; border-radius:12px; border:1px solid #eee; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; }
+.momo-table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:0.8rem; background:white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.momo-table th { background: var(--brand); color: white; padding: 8px; }
+.momo-table td { border:1px solid #ddd; padding:10px; text-align:center; font-weight: bold; cursor: pointer; }
+.momo-table td:first-child { background: #fdfdfd; font-weight: normal; text-align: left; cursor: default; }
+
+/* Dashboard Styles */
+.dashboard { background: white; padding: 15px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.dash-card { background: #f8f9fa; border: 1px solid #eef0f2; padding: 12px; border-radius: 8px; text-align: center; }
+.dash-num { font-size: 1.25rem; font-weight: bold; color: var(--brand); margin-top: 5px; }
+.dash-input { width: 80px; text-align: center; font-weight: bold; border: 1px solid #ccc; padding: 3px; border-radius: 4px; font-size: 1rem; color: var(--brand); }
+
+/* Cart Drawer */
+.cart{ position:fixed; bottom:0; width:100%; background:var(--brand); color:white; padding:15px; box-sizing:border-box; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.15); z-index: 1000; }
+button{ padding:10px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; }
+.print{ background:var(--success); color:white; width:60%; }
+.clear{ background:var(--danger); color:white; width:35%; }
+.report-card { background:white; padding:15px; border-radius:12px; margin-top:20px; border:1px solid #eee; }
+.report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.report-input { width:100%; padding:10px; box-sizing:border-box; margin-top:5px; border:1px solid #ccc; border-radius:6px; font-size:1rem; }
+.report-btn { width:100%; background:var(--brand); color:white; padding:12px; border:none; border-radius:8px; font-weight: bold; }
+.report-item { border-bottom:1px solid #eee; padding:10px 0; font-size:0.9rem; }
+
+/* Admin Editor Styling */
+.mgmt-table { width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px; }
+.mgmt-table th, .mgmt-table td { border:1px solid #ddd; padding:6px; text-align:left; }
+.mgmt-input { width:100%; padding:4px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px; }
+
+@media print{
+    body *{ visibility:hidden; }
+    #print, #print *{ visibility:visible; }
+    #print{ position:absolute; left:0; top:0; width:58mm; font-family:monospace; font-size:12px; white-space:pre; }
+}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay">
+    <div class="login-box">
+        <h2 style="margin:0 0 5px 0; color:var(--brand);">Susara POS</h2>
+        <p style="margin:0 0 20px 0; color:#666; font-size:0.9rem;">Sign in to open register</p>
+        <input type="text" id="uid" class="login-input" placeholder="User ID">
+        <input type="password" id="pwd" class="login-input" placeholder="Password">
+        <button onclick="checkLogin()" class="login-btn">LOGIN</button>
+        <div id="loginErr" class="login-err">Invalid User ID or Password!</div>
+    </div>
+</div>
+
+<div id="appContent">
+    <nav>
+        <b>SUSARA CAFFE</b>
+        <div>Table <input id="table" type="number" value="1" style="width:50px; padding:5px; border-radius:4px; border:none; text-align:center; font-weight:bold;"></div>
+    </nav>
+
+    <div class="container">
+        <!-- METRICS DASHBOARD -->
+        <div class="dashboard">
+            <h3 style="margin:0; color:var(--brand); display:flex; justify-content:space-between; align-items:center;">
+                <span>📊 Dashboard & Register</span>
+                <button onclick="fetchSheetData()" style="padding:4px 10px; background:var(--brand); color:white; font-size:0.75rem; border-radius:4px;">🔄 Sync All</button>
+            </h3>
+            <div class="dash-grid">
+                <div class="dash-card" style="grid-column: span 2; display: flex; justify-content: space-around; align-items: center; background: #ebf5fb;">
+                    <div>
+                        <span style="font-size:0.8rem; color:#555; display:block;">Opening Balance:</span>
+                        Rs <input type="number" id="openingBalance" class="dash-input" value="0" oninput="calculateClosingBalance()">
+                    </div>
+                    <div style="border-left: 1px solid #ccc; height: 35px;"></div>
+                    <div>
+                        <span style="font-size:0.8rem; color:#555; display:block;">Closing Balance (Expected):</span>
+                        <span id="closingBalance" style="font-size:1.1rem; font-weight:bold; color:var(--success);">Rs 0</span>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <div style="font-size:0.8rem; color:#666;">Today's Net Sales</div>
+                    <div class="dash-num" id="dashTodaySales">Rs 0</div>
+                </div>
+                <div class="dash-card">
+                    <div style="font-size:0.8rem; color:#666;">Today's Orders</div>
+                    <div class="dash-num" id="dashTodayOrders">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POS Interactive Grid -->
+        <div id="menu"></div>
+
+        <!-- LIVE MENU ITEMS MANAGER -->
+        <div class="report-card" style="border-color: var(--accent);">
+            <h3 style="margin:0 0 10px 0; color:var(--brand);">🛠️ Menu Item & Price Management</h3>
+            <p style="margin:0 0 15px 0; font-size:0.8rem; color:#666;">Add new items or edit prices directly below. Remember to save changes to send them to Google Sheets.</p>
+            
+            <div style="background:#f9f9f9; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
+                <h4 style="margin:0 0 10px 0; font-size:0.85rem; color:var(--brand);">+ Add New Item</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <input type="text" id="new_name" class="report-input" style="margin:0;" placeholder="Item Name (e.g., Milk Tea)">
+                    <input type="number" id="new_price" class="report-input" style="margin:0;" placeholder="Price (Rs)">
+                    <select id="new_cat" class="report-input" style="margin:0;">
+                        <option value="Special Board">Special Board</option>
+                        <option value="Coffee Specialties">Coffee Specialties</option>
+                        <option value="Breakfast & Tiffin">Breakfast & Tiffin</option>
+                        <option value="Chowmein Items">Chowmein Items</option>
+                        <option value="Thukpa Items">Thukpa Items</option>
+                        <option value="Combo Items">Combo Items</option>
+                        <option value="Lassi Items">Lassi Items</option>
+                    </select>
+                    <select id="new_momo" class="report-input" style="margin:0;">
+                        <option value="FALSE">Regular Item</option>
+                        <option value="TRUE">Momo Variant</option>
+                    </select>
+                </div>
+                <button onclick="addNewItemToArray()" class="report-btn" style="background:var(--accent); margin-top:10px; padding:8px;">Add to List</button>
+            </div>
+
+            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; background:white;">
+                <table class="mgmt-table">
+                    <thead>
+                        <tr style="background:#eee;">
+                            <th>Item Name</th>
+                            <th style="width:80px;">Price (Rs)</th>
+                            <th style="width:50px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mgmtTableBody"></tbody>
+                </table>
+            </div>
+            <button onclick="saveMenuToCloud()" id="btnSaveMenu" class="report-btn" style="background:var(--success); margin-top:12px;">💾 SAVE CHANGES TO CLOUD</button>
+        </div>
+
+        <!-- HISTORIC SHIFT HISTORY REPORTS -->
+        <div class="report-card">
+            <h3 style="margin:0 0 15px 0; color:var(--brand);">🔍 Filter Sales History</h3>
+            <div class="report-grid">
+                <div>
+                    <label style="font-size:0.85rem; color:#666;">From:</label>
+                    <input type="date" id="fromDate" class="report-input">
+                </div>
+                <div>
+                    <label style="font-size:0.85rem; color:#666;">To:</label>
+                    <input type="date" id="toDate" class="report-input">
+                </div>
+            </div>
+            <button onclick="loadRangeReport()" class="report-btn">GENERATE REPORT</button>
+            <div id="reportBox" style="margin-top:15px;"></div>
+        </div>
+    </div>
+
+    <!-- CART CONTAINER DRAWER -->
+    <div class="cart" id="cartBox" style="display:none">
+        <div id="cartItems" style="font-size:0.9rem; margin-bottom:10px; max-height:100px; overflow-y:auto;"></div>
+        <div style="display:flex; justify-content:space-between; font-size:1.1rem;">
+            <b>Total:</b> <b>Rs <span id="total">0</span></b>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <button class="print" onclick="printBill()">PRINT BILL</button>
+            <button class="clear" onclick="clearCart()">CLEAR</button>
+        </div>
+    </div>
+</div>
+
+<pre id="print"></pre>
+
+<script>
+// IMPORTANT: Paste your copied Web App deployment link here
+const scriptURL = "https://script.google.com/macros/s/AKfycbxgheKOTTiprnPELY3O0qaf9AI1-z8-lC2AALyhwJ_-HXbr0uuLEIlqE1UNJaSOFiQOlg/exec";
+
+// Default Baseline Menu Layout used if Sheet2 dataset drops or loads empty
+let menuItems = [
+    {category: "Special Board", name: "Gajar ko Aalu Paratha", price: 100, isMomo: false},
+    {category: "Special Board", name: "Fapar ko Jhol Momo", price: 230, isMomo: false},
+    {category: "Coffee Specialties", name: "Espresso", price: 100, isMomo: false},
+    {category: "Coffee Specialties", name: "Doppio", price: 150, isMomo: false},
+    {category: "Coffee Specialties", name: "Americano", price: 130, isMomo: false},
+    {category: "Coffee Specialties", name: "Cappuccino", price: 150, isMomo: false},
+    {category: "Coffee Specialties", name: "Cafe Latte", price: 200, isMomo: false},
+    {category: "Coffee Specialties", name: "Honey Latte", price: 220, isMomo: false},
+    {category: "Coffee Specialties", name: "Lungo", price: 160, isMomo: false},
+    {category: "Coffee Specialties", name: "Hot Chocolate", price: 200, isMomo: false},
+    {category: "Coffee Specialties", name: "Flat White", price: 180, isMomo: false},
+    {category: "Coffee Specialties", name: "Hot Lemon Honey", price: 100, isMomo: false},
+    {category: "Coffee Specialties", name: "Lemon Tea", price: 60, isMomo: false},
+    {category: "Coffee Specialties", name: "Black Tea", price: 50, isMomo: false},
+    {category: "Coffee Specialties", name: "Green Tea", price: 50, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Chana Anda", price: 120, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Samosa Tarkari", price: 120, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Lachha Paratha Tarkari", price: 110, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Puri Tarkari", price: 120, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Chana Tarkari", price: 80, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Bread Omlet", price: 120, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Veg Sandwich", price: 150, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Egg Sandwich", price: 190, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Chicken Sandwich", price: 220, isMomo: false},
+    {category: "Breakfast & Tiffin", name: "Mix Sandwich", price: 250, isMomo: false},
+    {category: "Chowmein Items", name: "Veg Chowmein", price: 120, isMomo: false},
+    {category: "Chowmein Items", name: "Chicken Chowmein", price: 180, isMomo: false},
+    {category: "Chowmein Items", name: "Egg Chowmein", price: 150, isMomo: false},
+    {category: "Chowmein Items", name: "Mix Chowmein", price: 250, isMomo: false},
+    {category: "Thukpa Items", name: "Veg Thukpa", price: 180, isMomo: false},
+    {category: "Thukpa Items", name: "Chicken Thukpa", price: 230, isMomo: false},
+    {category: "Thukpa Items", name: "Egg Thukpa", price: 210, isMomo: false},
+    {category: "Thukpa Items", name: "Mix Thukpa", price: 250, isMomo: false},
+    {category: "Combo Items", name: "Veg Combo", price: 200, isMomo: false},
+    {category: "Combo Items", name: "Chicken Combo", price: 250, isMomo: false},
+    {category: "Combo Items", name: "Mix Combo", price: 280, isMomo: false},
+    {category: "Lassi Items", name: "Plain Lassi", price: 120, isMomo: false},
+    {category: "Lassi Items", name: "Banana Lassi", price: 150, isMomo: false},
+    {category: "Lassi Items", name: "Mix Lassi", price: 180, isMomo: false}
+];
+
+let cart = [];
+let cachedSalesRawData = [];
+let globalTodaySales = 0;
+
+const todayIsoStr = new Date().toISOString().split('T')[0];
+document.getElementById('fromDate').value = todayIsoStr;
+document.getElementById('toDate').value = todayIsoStr;
+
+if(localStorage.getItem('pos_opening')) {
+    document.getElementById('openingBalance').value = localStorage.getItem('pos_opening');
+}
+
+function checkLogin() {
+    let u = document.getElementById("uid").value.trim();
+    let p = document.getElementById("pwd").value.trim();
+    if(u === "admin" && p === "123456") {
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("appContent").style.display = "block";
+        fetchSheetData();
+    } else {
+        document.getElementById("loginErr").style.display = "block";
+    }
+}
+
+// FETCH BOTH SALES HISTORY AND SYSTEM CUSTOM MENU LIST DATA COMBINED
+async function fetchSheetData() {
+    try {
+        let res = await fetch(scriptURL);
+        if(!res.ok) return;
+        let json = await res.json();
+        
+        cachedSalesRawData = json.sales || [];
+        
+        // If Google Sheet2 contains custom menus, load those items instead
+        if(json.menu && json.menu.length > 1) {
+            menuItems = [];
+            json.menu.slice(1).forEach(r => {
+                menuItems.push({
+                    category: r[0],
+                    name: r[1],
+                    price: Number(r[2]),
+                    isMomo: String(r[3]).toUpperCase() === "TRUE"
+                });
+            });
+        }
+        
+        renderPOSMenu();
+        renderAdminMgmtTable();
+        processDashboardMetrics();
+    } catch(err) {
+        console.log("Background synchronization dropped. Running standalone fallback layout.");
+        renderPOSMenu();
+        renderAdminMgmtTable();
+    }
+}
+
+// RENDER POS GRID INTERFACE DYNAMICALLY BY CATEGORY
+function renderPOSMenu() {
+    let html = "";
+    let categories = [...new Set(menuItems.filter(i => !i.isMomo).map(i => i.category))];
+    
+    categories.forEach(cat => {
+        html += `<div class="section">${cat}</div><div class="grid">`;
+        menuItems.filter(i => i.category === cat && !i.isMomo).forEach(i => {
+            html += `<div class="item" onclick="addToCart('${i.name}', ${i.price})"><b>${i.name}</b><br><span style="color:var(--accent);">Rs ${i.price}</span></div>`;
+        });
+        html += `</div>`;
+    });
+    
+    // Build separate Momo Special Table rows automatically
+    let momos = menuItems.filter(i => i.isMomo);
+    if(momos.length > 0) {
+        html += `<div class="section">Momo Grid Matrix</div><table class="momo-table"><thead><tr><th>Type</th><th>PRICE (Rs)</th></tr></thead><tbody>`;
+        momos.forEach(m => {
+            html += `<tr>
+                <td><b>${m.name}</b></td>
+                <td onclick="addToCart('${m.name}', ${m.price})">Rs ${m.price}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+    }
+    document.getElementById("menu").innerHTML = html;
+}
+
+// RENDER ADMIN LIST EDITOR
+function renderAdminMgmtTable() {
+    let html = "";
+    menuItems.forEach((item, idx) => {
+        html += `<tr>
+            <td><small style="color:#777; display:block;">${item.category}</small><b>${item.name}</b></td>
+            <td><input type="number" class="mgmt-input" value="${item.price}" onchange="updatePriceInArray(${idx}, this.value)"></td>
+            <td style="text-align:center;"><button onclick="removeItemFromArray(${idx})" style="padding:2px 6px; background:var(--danger); color:white; border-radius:4px; font-size:0.75rem;">X</button></td>
+        </tr>`;
+    });
+    document.getElementById("mgmtTableBody").innerHTML = html;
+}
+
+function updatePriceInArray(index, newPrice) {
+    menuItems[index].price = Number(newPrice) || 0;
+}
+
+function removeItemFromArray(index) {
+    menuItems.splice(index, 1);
+    renderAdminMgmtTable();
+}
+
+function addNewItemToArray() {
+    let name = document.getElementById("new_name").value.trim();
+    let price = Number(document.getElementById("new_price").value) || 0;
+    let cat = document.getElementById("new_cat").value;
+    let isMomo = document.getElementById("new_momo").value === "TRUE";
+    
+    if(!name || price <= 0) return alert("Please fill item name and valid price details!");
+    
+    menuItems.push({category: cat, name: name, price: price, isMomo: isMomo});
+    
+    document.getElementById("new_name").value = "";
+    document.getElementById("new_price").value = "";
+    
+    renderAdminMgmtTable();
+}
+
+// SAVE THE NEW MENU DATA STRUCTURE PERMANENTLY TO GOOGLE SHEET 2
+async function saveMenuToCloud() {
+    let btn = document.getElementById("btnSaveMenu");
+    btn.innerText = "⏳ SAVING TO CLOUD...";
+    btn.disabled = true;
+    
+    try {
+        let res = await fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify({action: "updateMenu", itemsList: menuItems})
+        });
+        alert("Menu changes pushed and saved to Google Sheets successfully!");
+        renderPOSMenu();
+    } catch(err) {
+        alert("Network update dropped out. Try resetting deployment authorization credentials.");
+    }
+    btn.innerText = "💾 SAVE CHANGES TO CLOUD";
+    btn.disabled = false;
+}
+
+function addToCart(name, price) {
+    let f = cart.find(i => i.name === name);
+    if(f) f.qty++; else cart.push({name, price, qty: 1});
+    updateCartDrawer();
+}
+
+function updateCartDrawer() {
+    let total = 0, html = "";
+    cart.forEach((i, idx) => {
+        total += i.price * i.qty;
+        html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span>${i.name} x${i.qty}</span>
+            <span>Rs ${i.price*i.qty} <button onclick="cart.splice(${idx},1);updateCartDrawer()" style="padding:2px 6px; background:none; color:var(--danger); font-size:1rem;">❌</button></span>
+        </div>`;
+    });
+    document.getElementById("cartItems").innerHTML = html;
+    document.getElementById("total").innerText = total;
+    document.getElementById("cartBox").style.display = cart.length ? "block" : "none";
+}
+
+function clearCart() { cart = []; updateCartDrawer(); }
+
+function printBill() {
+    if(cart.length === 0) return;
+    let total = 0, items = "";
+    cart.forEach(i => { total += i.price * i.qty; items += `${i.name} x${i.qty}, `; });
+    let table = document.getElementById("table").value;
+    
+    let now = new Date();
+    let dateStr = now.toLocaleDateString();
+    let timeStr = now.toLocaleTimeString();
+
+    fetch(scriptURL, {
+        method: "POST", 
+        mode: "no-cors", 
+        body: JSON.stringify({action: "saveOrder", date: dateStr, time: timeStr, table: table, items: items, total: total})
+    });
+    
+    document.getElementById("print").innerText = `SUSARA CAFFE\n------------------------\nTable: ${table}\nDate: ${dateStr}\nTime: ${timeStr}\n------------------------\n${items.replaceAll(", ", "\n")}\n------------------------\nTOTAL: Rs ${total}\n------------------------\nThank You!\n\n\n`;
+    window.print();
+    clearCart();
+    
+    setTimeout(fetchSheetData, 2000);
+}
+
+function parseSheetDate(dateStr) {
+    if (!dateStr) return new Date(0);
+    let parts = String(dateStr).split(/[\/\-]/);
+    if (parts.length === 3) {
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+    }
+    return new Date(dateStr);
+}
+
+function calculateClosingBalance() {
+    let opening = Number(document.getElementById("openingBalance").value) || 0;
+    localStorage.setItem('pos_opening', opening);
+    let closing = opening + globalTodaySales;
+    document.getElementById("closingBalance").innerText = `Rs ${closing}`;
+}
+
+function processDashboardMetrics() {
+    let today = new Date(); today.setHours(0,0,0,0);
+    let tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    let todaySalesSum = 0;
+    let todayOrdersCount = 0;
+
+    cachedSalesRawData.slice(1).forEach(row => {
+        if(!row[0]) return;
+        let parsedRowDate = parseSheetDate(row[0]);
+        if(!isNaN(parsedRowDate) && parsedRowDate >= today && parsedRowDate < tomorrow) {
+            todaySalesSum += Number(row[4] || 0);
+            todayOrdersCount++;
+        }
+    });
+
+    globalTodaySales = todaySalesSum;
+    document.getElementById("dashTodaySales").innerText = `Rs ${todaySalesSum}`;
+    document.getElementById("dashTodayOrders").innerText = todayOrdersCount;
+    calculateClosingBalance();
+}
+
+async function loadRangeReport() {
+    let box = document.getElementById("reportBox");
+    box.innerHTML = "<i>Pulling network records...</i>";
+    
+    let fromInput = document.getElementById("fromDate").value;
+    let toInput = document.getElementById("toDate").value;
+    if(!fromInput || !toInput) return box.innerHTML = "<b style='color:var(--danger);'>Define complete date fields.</b>";
+
+    let start = new Date(fromInput); start.setHours(0,0,0,0);
+    let end = new Date(toInput); end.setHours(23,59,59,999);
+    
+    box.innerHTML = "";
+    let totalPeriodAmount = 0;
+    let count = 0;
+
+    cachedSalesRawData.slice(1).reverse().forEach(row => {
+        if(!row[0]) return;
+        let parsedRowDate = parseSheetDate(row[0]);
+        
+        if(!isNaN(parsedRowDate) && parsedRowDate >= start && parsedRowDate <= end) {
+            totalPeriodAmount += Number(row[4] || 0);
+            count++;
+            box.innerHTML += `<div class="report-item">
+                <b>Table ${row[2]}</b> — <span style="color:var(--success); font-weight:bold;">Rs ${row[4]}</span><br>
+                <small style="color:#777;">Date: ${row[0]} | Time: ${row[1]}</small><br>
+                <span style="font-size:0.8rem; color:#555;">${row[3]}</span>
+            </div>`;
+        }
+    });
+
+    if(count === 0) {
+        box.innerHTML = `<div style="text-align:center; padding:10px; color:#888;">No transactions registered.</div>`;
+    } else {
+        box.innerHTML = `<div style="background:#e8f8f5; border:1px solid var(--success); padding:10px; border-radius:6px; margin-bottom:10px; text-align:center;">
+            <h4 style="margin:0; color:var(--success);">Selected Target Income: Rs ${totalPeriodAmount}</h4>
+            <small style="color:#666;">Invoiced Bills handled: ${count}</small>
+        </div>` + box.innerHTML;
+    }
+}
+</script>
+</body>
+</html>
