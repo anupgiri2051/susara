@@ -49,6 +49,8 @@ button{ padding:10px; border:none; border-radius:8px; font-weight:bold; cursor:p
 .mgmt-table { width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px; }
 .mgmt-table th, .mgmt-table td { border:1px solid #ddd; padding:6px; text-align:left; }
 .mgmt-input { width:100%; padding:4px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px; }
+.nav-admin-btn { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; cursor: pointer; }
+.nav-admin-btn:hover { background: var(--accent); }
 
 @media print{
     body *{ visibility:hidden; }
@@ -73,7 +75,10 @@ button{ padding:10px; border:none; border-radius:8px; font-weight:bold; cursor:p
 <div id="appContent">
     <nav>
         <b>SUSARA CAFFE</b>
-        <div>Table <input id="table" type="number" value="1" style="width:50px; padding:5px; border-radius:4px; border:none; text-align:center; font-weight:bold;"></div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button onclick="toggleAdminPanel()" class="nav-admin-btn" id="adminToggleBtn">🔒 Admin Panel</button>
+            <div style="color: white; font-size: 0.9rem;">Table <input id="table" type="number" value="1" style="width:40px; padding:5px; border-radius:4px; border:none; text-align:center; font-weight:bold;"></div>
+        </div>
     </nav>
 
     <div class="container">
@@ -106,13 +111,13 @@ button{ padding:10px; border:none; border-radius:8px; font-weight:bold; cursor:p
             </div>
         </div>
 
-        <!-- POS Interactive Grid -->
-        <div id="menu"></div>
-
-        <!-- LIVE MENU ITEMS MANAGER -->
-        <div class="report-card" style="border-color: var(--accent);">
-            <h3 style="margin:0 0 10px 0; color:var(--brand);">🛠️ Menu Item & Price Management</h3>
-            <p style="margin:0 0 15px 0; font-size:0.8rem; color:#666;">Add new items or edit prices directly below. Remember to save changes to send them to Google Sheets.</p>
+        <!-- COMPLETELY PRIVATE MENU ITEMS MANAGER (Hidden by default) -->
+        <div id="privateAdminPanel" class="report-card" style="border-color: var(--accent); display: none; background: #fffcf9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0; color:var(--brand);">🛠️ Menu Item & Price Management</h3>
+                <button onclick="closeAdminPanel()" style="background: var(--danger); color: white; padding: 4px 8px; font-size: 0.8rem;">Hide Panel</button>
+            </div>
+            <p style="margin:0 0 15px 0; font-size:0.8rem; color:#666;">Changes made here will modify your interactive catalog and sync directly with Google Sheet2.</p>
             
             <div style="background:#f9f9f9; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
                 <h4 style="margin:0 0 10px 0; font-size:0.85rem; color:var(--brand);">+ Add New Item</h4>
@@ -151,6 +156,9 @@ button{ padding:10px; border:none; border-radius:8px; font-weight:bold; cursor:p
             <button onclick="saveMenuToCloud()" id="btnSaveMenu" class="report-btn" style="background:var(--success); margin-top:12px;">💾 SAVE CHANGES TO CLOUD</button>
         </div>
 
+        <!-- POS Interactive Grid -->
+        <div id="menu"></div>
+
         <!-- HISTORIC SHIFT HISTORY REPORTS -->
         <div class="report-card">
             <h3 style="margin:0 0 15px 0; color:var(--brand);">🔍 Filter Sales History</h3>
@@ -186,9 +194,8 @@ button{ padding:10px; border:none; border-radius:8px; font-weight:bold; cursor:p
 
 <script>
 // IMPORTANT: Paste your copied Web App deployment link here
-const scriptURL = "https://script.google.com/macros/s/AKfycbxgheKOTTiprnPELY3O0qaf9AI1-z8-lC2AALyhwJ_-HXbr0uuLEIlqE1UNJaSOFiQOlg/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbyDZ7Q1w04oPlqlvsbxhJznflysOxWXae8hjDachoNxjb54Y6VYe-Va5achM6zqje9nfA/exec";
 
-// Default Baseline Menu Layout used if Sheet2 dataset drops or loads empty
 let menuItems = [
     {category: "Special Board", name: "Gajar ko Aalu Paratha", price: 100, isMomo: false},
     {category: "Special Board", name: "Fapar ko Jhol Momo", price: 230, isMomo: false},
@@ -234,6 +241,7 @@ let menuItems = [
 let cart = [];
 let cachedSalesRawData = [];
 let globalTodaySales = 0;
+let isAdminUnlocked = false;
 
 const todayIsoStr = new Date().toISOString().split('T')[0];
 document.getElementById('fromDate').value = todayIsoStr;
@@ -255,7 +263,31 @@ function checkLogin() {
     }
 }
 
-// FETCH BOTH SALES HISTORY AND SYSTEM CUSTOM MENU LIST DATA COMBINED
+// PRIVACY ROUTE: TOGGLE ENTIRE VISIBILITY USING THE 12345 PIN
+function toggleAdminPanel() {
+    if (isAdminUnlocked) {
+        closeAdminPanel();
+    } else {
+        let pin = prompt("Enter 5-digit Admin PIN:");
+        if (pin === "12345") {
+            isAdminUnlocked = true;
+            document.getElementById("privateAdminPanel").style.display = "block";
+            document.getElementById("adminToggleBtn").innerText = "🔓 Unlock Panel";
+            document.getElementById("adminToggleBtn").style.background = "var(--success)";
+            renderAdminMgmtTable();
+        } else {
+            alert("Invalid PIN. Access denied.");
+        }
+    }
+}
+
+function closeAdminPanel() {
+    isAdminUnlocked = false;
+    document.getElementById("privateAdminPanel").style.display = "none";
+    document.getElementById("adminToggleBtn").innerText = "🔒 Admin Panel";
+    document.getElementById("adminToggleBtn").style.background = "rgba(255,255,255,0.2)";
+}
+
 async function fetchSheetData() {
     try {
         let res = await fetch(scriptURL);
@@ -264,7 +296,6 @@ async function fetchSheetData() {
         
         cachedSalesRawData = json.sales || [];
         
-        // If Google Sheet2 contains custom menus, load those items instead
         if(json.menu && json.menu.length > 1) {
             menuItems = [];
             json.menu.slice(1).forEach(r => {
@@ -278,16 +309,14 @@ async function fetchSheetData() {
         }
         
         renderPOSMenu();
-        renderAdminMgmtTable();
+        if(isAdminUnlocked) renderAdminMgmtTable();
         processDashboardMetrics();
     } catch(err) {
-        console.log("Background synchronization dropped. Running standalone fallback layout.");
         renderPOSMenu();
-        renderAdminMgmtTable();
+        if(isAdminUnlocked) renderAdminMgmtTable();
     }
 }
 
-// RENDER POS GRID INTERFACE DYNAMICALLY BY CATEGORY
 function renderPOSMenu() {
     let html = "";
     let categories = [...new Set(menuItems.filter(i => !i.isMomo).map(i => i.category))];
@@ -300,7 +329,6 @@ function renderPOSMenu() {
         html += `</div>`;
     });
     
-    // Build separate Momo Special Table rows automatically
     let momos = menuItems.filter(i => i.isMomo);
     if(momos.length > 0) {
         html += `<div class="section">Momo Grid Matrix</div><table class="momo-table"><thead><tr><th>Type</th><th>PRICE (Rs)</th></tr></thead><tbody>`;
@@ -315,7 +343,6 @@ function renderPOSMenu() {
     document.getElementById("menu").innerHTML = html;
 }
 
-// RENDER ADMIN LIST EDITOR
 function renderAdminMgmtTable() {
     let html = "";
     menuItems.forEach((item, idx) => {
@@ -329,15 +356,18 @@ function renderAdminMgmtTable() {
 }
 
 function updatePriceInArray(index, newPrice) {
+    if (!isAdminUnlocked) return alert("Session expired. Please unlock the admin panel.");
     menuItems[index].price = Number(newPrice) || 0;
 }
 
 function removeItemFromArray(index) {
+    if (!isAdminUnlocked) return;
     menuItems.splice(index, 1);
     renderAdminMgmtTable();
 }
 
 function addNewItemToArray() {
+    if (!isAdminUnlocked) return;
     let name = document.getElementById("new_name").value.trim();
     let price = Number(document.getElementById("new_price").value) || 0;
     let cat = document.getElementById("new_cat").value;
@@ -346,15 +376,15 @@ function addNewItemToArray() {
     if(!name || price <= 0) return alert("Please fill item name and valid price details!");
     
     menuItems.push({category: cat, name: name, price: price, isMomo: isMomo});
-    
     document.getElementById("new_name").value = "";
     document.getElementById("new_price").value = "";
     
     renderAdminMgmtTable();
 }
 
-// SAVE THE NEW MENU DATA STRUCTURE PERMANENTLY TO GOOGLE SHEET 2
 async function saveMenuToCloud() {
+    if (!isAdminUnlocked) return alert("Please unlock the panel first.");
+    
     let btn = document.getElementById("btnSaveMenu");
     btn.innerText = "⏳ SAVING TO CLOUD...";
     btn.disabled = true;
@@ -367,7 +397,7 @@ async function saveMenuToCloud() {
         alert("Menu changes pushed and saved to Google Sheets successfully!");
         renderPOSMenu();
     } catch(err) {
-        alert("Network update dropped out. Try resetting deployment authorization credentials.");
+        alert("Network update dropped out.");
     }
     btn.innerText = "💾 SAVE CHANGES TO CLOUD";
     btn.disabled = false;
