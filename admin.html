@@ -325,16 +325,8 @@
                 <div style="display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:8px; margin-bottom:12px;">
                     <input type="text" id="newItemName" placeholder="Item Name" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
                     <input type="number" id="newItemPrice" placeholder="Price (Rs)" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
-                    <select id="newItemCat" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
-                        <option value="Coffee & Hot Drinks">Coffee & Hot Drinks</option>
-                        <option value="Teas">Teas</option>
-                        <option value="Breakfast">Breakfast</option>
-                        <option value="Momos">Momos</option>
-                        <option value="Chowmein & Thukpa">Chowmein & Thukpa</option>
-                        <option value="Sandwiches & Burgers">Sandwiches & Burgers</option>
-                        <option value="Snacks">Snacks</option>
-                        <option value="Lassi & Cold Drinks">Lassi & Cold Drinks</option>
-                    </select>
+                    <input list="catList" id="newItemCat" placeholder="Category" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <datalist id="catList"></datalist>
                     <button onclick="addMenuItem()" class="btn-action">Add Item</button>
                 </div>
 
@@ -485,15 +477,21 @@
 
                 tbody.innerHTML = '';
 
+                const cats = [...new Set([...defaultMenu.map(i => i.category), ...Object.values(data || {}).map(i => i.category)])];
+                document.getElementById('catList').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+
                 if (data) {
                     Object.keys(data).sort((a, b) => (data[a].category || '').localeCompare(data[b].category || '') || (data[a].name || '').localeCompare(data[b].name || '')).forEach(id => {
                         const item = data[id];
                         tbody.innerHTML += `
                             <tr>
-                                <td>${esc(item.category)}</td>
-                                <td><b>${esc(item.name)}</b></td>
-                                <td><input type="number" min="0" value="${Number(item.price)}" style="width:80px; padding:4px;" onchange="updatePrice('${esc(id)}', this.value)"></td>
-                                <td><button onclick="removeItem('${esc(id)}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Remove</button></td>
+                                <td><input id="ec_${esc(id)}" list="catList" value="${esc(item.category)}" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; width:100%;"></td>
+                                <td><input id="en_${esc(id)}" value="${esc(item.name)}" maxlength="60" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; width:100%; font-weight:600;"></td>
+                                <td><input id="ep_${esc(id)}" type="number" min="0" value="${Number(item.price)}" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; width:100%; min-width:80px;"></td>
+                                <td style="white-space:nowrap;">
+                                    <button onclick="updateItem('${esc(id)}', this)" style="background:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">Save</button>
+                                    <button onclick="removeItem('${esc(id)}')" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">Remove</button>
+                                </td>
                             </tr>
                         `;
                     });
@@ -702,9 +700,9 @@
         window.addMenuItem = async function() {
             const name = document.getElementById('newItemName').value.trim();
             const price = Number(document.getElementById('newItemPrice').value);
-            const category = document.getElementById('newItemCat').value;
+            const category = document.getElementById('newItemCat').value.trim();
 
-            if (!name || price <= 0) {
+            if (!name || !category.trim() || price <= 0) {
                 alert("Please enter a valid item name and price.");
                 return;
             }
@@ -712,6 +710,21 @@
             await push(ref(db, 'menu'), { name, price, category });
             document.getElementById('newItemName').value = '';
             document.getElementById('newItemPrice').value = '';
+        };
+
+        window.updateItem = async function(id, btn) {
+            const name = document.getElementById('en_' + id).value.trim();
+            const category = document.getElementById('ec_' + id).value.trim();
+            const price = Number(document.getElementById('ep_' + id).value);
+            if (!name || !category || isNaN(price) || price < 0) {
+                alert('Enter a valid name, category and price.');
+                return;
+            }
+            try {
+                await update(ref(db, 'menu/' + id), { name, category, price });
+                btn.textContent = 'Saved ✓';
+                setTimeout(() => { btn.textContent = 'Save'; }, 1500);
+            } catch (e) { alert('Could not save: ' + e.message); }
         };
 
         window.updatePrice = async function(id, val) {
