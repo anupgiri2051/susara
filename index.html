@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e293b">
+<title>Susara POS - Staff Terminal</title>
+<style>
+:root{--pri:#1e293b;--acc:#f97316;--bg:#f8fafc;--card:#fff;--txt:#0f172a;--mut:#64748b;--bd:#e2e8f0;--ok:#10b981;--bad:#ef4444}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);padding-bottom:110px;user-select:none}
+nav{background:var(--pri);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.brand{font-weight:700;font-size:1.05rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-left:8px}
+.dot.on{background:var(--ok)}
+.tbl{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);padding:4px 10px;border-radius:10px;font-size:.85rem}
+.tbl input{width:60px;padding:6px;border:0;border-radius:6px;font-weight:700;text-align:center;font-size:1rem}
+.stats{display:flex;gap:8px;max-width:900px;margin:10px auto 0;padding:0 16px;overflow-x:auto}
+.st{flex:1;min-width:105px;background:#fff;border:1px solid var(--bd);border-radius:10px;padding:8px 12px}
+.st small{display:block;color:var(--mut);font-size:.72rem;font-weight:600;text-transform:uppercase}
+.st b{font-size:1.05rem}.st.main{background:var(--pri);color:#fff;border-color:var(--pri)}.st.main small{color:#94a3b8}.st.main b{color:#fdba74;font-size:1.2rem}
+.tools{position:sticky;top:52px;z-index:90;background:var(--bg);padding:10px 16px 6px;max-width:900px;margin:0 auto}
+#search{width:100%;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;font-size:1rem;user-select:text}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+.chip{flex:none;padding:8px 14px;border-radius:20px;border:1px solid var(--bd);background:#fff;font-weight:600;font-size:.85rem;cursor:pointer}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.container{max-width:900px;margin:0 auto;padding:0 16px 16px}
+.sec{margin:20px 0 10px;font-size:.8rem;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.item{position:relative;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px 10px;text-align:center;min-height:84px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:transform .1s}
+.item:active{transform:scale(.96);border-color:var(--acc)}
+.item .n{font-weight:600;font-size:.92rem}
+.item .p{margin-top:6px;font-weight:700;color:var(--acc)}
+.item .b{position:absolute;top:-7px;right:-7px;background:var(--acc);color:#fff;min-width:24px;height:24px;border-radius:12px;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.empty{text-align:center;color:var(--mut);padding:40px}
+.drawer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:900px;background:var(--pri);color:#fff;border-radius:16px 16px 0 0;box-shadow:0 -8px 25px rgba(0,0,0,.25);z-index:1000;display:none;max-height:88vh;overflow-y:auto}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;cursor:pointer;font-weight:700;position:sticky;top:0;background:var(--pri)}
+.bar .tot{font-size:1.25rem;color:#fdba74}
+.body{padding:0 18px 18px;display:none}
+.drawer.open .body{display:block}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1);gap:8px}
+.row .nm{flex:1;font-size:.92rem}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:34px;height:34px;border-radius:8px;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer}
+.qty b{min-width:20px;text-align:center}
+.amt{min-width:70px;text-align:right}
+.fld{display:flex;gap:8px;margin-top:12px;align-items:center}
+.fld label{font-size:.8rem;color:#94a3b8;min-width:70px}
+.fld input{flex:1;padding:10px;border:0;border-radius:8px;font-size:1rem;user-select:text}
+.pay{display:flex;gap:8px;margin-top:12px}
+.pay button{flex:1;padding:11px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,.12);color:#fff;font-weight:700;cursor:pointer}
+.pay button.on{border-color:var(--acc);background:rgba(249,115,22,.25)}
+.sum{display:flex;justify-content:space-between;font-size:.9rem;color:#cbd5e1;margin-top:10px}
+.grand{font-size:1.3rem;font-weight:800;color:#fff;margin-top:6px}
+.chg{color:#6ee7b7}
+.acts{display:flex;gap:10px;margin-top:14px}
+.btn{border:0;padding:14px;border-radius:10px;font-weight:800;font-size:1rem;cursor:pointer;color:#fff}
+.btn:disabled{opacity:.5}
+.go{background:var(--ok);flex:2}
+.clr{background:var(--bad);flex:1}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:10px;z-index:2000;display:none;font-weight:600}
+#toast.err{background:var(--bad)}
+#receipt{display:none}
+@media print{
+ @page{margin:0}
+ body>*:not(#receipt){display:none!important}
+ #receipt{display:block;width:58mm;padding:2mm;font-family:monospace;font-size:11px;white-space:pre;color:#000}
+}
+</style>
+</head>
+<body>
+<nav>
+ <div class="brand">☕ SUSARA CAFFE POS<span id="dot" class="dot" title="Connection"></span></div>
+ <button id="logout" style="background:none;border:1px solid #64748b;color:#cbd5e1;border-radius:8px;padding:6px 10px;cursor:pointer">Logout</button>
+ <div class="tbl"><span>Table</span><input type="text" id="tableNum" value="1" maxlength="6" inputmode="text"></div>
+</nav>
+<div class="stats">
+ <div class="st main"><small>Today's Sales</small><b>Rs <span id="stSales">0</span></b></div>
+ <div class="st"><small>Orders</small><b id="stOrders">0</b></div>
+ <div class="st"><small>Cash</small><b>Rs <span id="stCash">0</span></b></div>
+ <div class="st"><small>QR / Card</small><b>Rs <span id="stDig">0</span></b></div>
+</div>
+<div class="tools">
+ <input id="search" type="search" placeholder="Search menu…" autocomplete="off">
+ <div class="chips" id="chips"></div>
+</div>
+<div class="container"><div id="menuContainer" class="empty">Loading menu…</div></div>
+
+<div id="drawer" class="drawer">
+ <div class="bar" id="bar"><span id="cnt">0 items</span><span><span class="tot">Rs <span id="barTotal">0</span></span> ▲</span></div>
+ <div class="body">
+  <div id="cartItems"></div>
+  <div class="fld"><label>Note</label><input id="note" placeholder="e.g. less sugar, takeaway"></div>
+  <div class="fld"><label>Discount</label><input id="disc" type="number" min="0" inputmode="numeric" placeholder="Rs 0"></div>
+  <div class="pay" id="pay"><button data-m="Cash" class="on">Cash</button><button data-m="QR">QR / Wallet</button><button data-m="Card">Card</button></div>
+  <div class="fld" id="cashRow"><label>Received</label><input id="recv" type="number" min="0" inputmode="numeric" placeholder="Rs"></div>
+  <div class="sum"><span>Subtotal</span><span>Rs <span id="sub">0</span></span></div>
+  <div class="sum grand"><span>TOTAL</span><span>Rs <span id="grand">0</span></span></div>
+  <div class="sum chg" id="chgRow" style="display:none"><span>Change</span><span>Rs <span id="chg">0</span></span></div>
+  <div class="acts"><button class="btn go" id="goBtn">PRINT &amp; RECORD</button><button class="btn clr" id="clrBtn">CLEAR</button></div>
+ </div>
+</div>
+<div id="login" style="position:fixed;inset:0;background:#0f172a;z-index:3000;display:none;align-items:center;justify-content:center;padding:20px">
+ <div style="background:#fff;border-radius:14px;padding:26px;width:100%;max-width:340px">
+  <h2 style="margin:0 0 14px;text-align:center">☕ Staff Login</h2>
+  <input id="lemail" type="email" placeholder="Staff email" style="width:100%;padding:12px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:1rem;user-select:text">
+  <input id="lpass" type="password" placeholder="Password" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:1rem;user-select:text">
+  <button id="loginBtn" class="btn go" style="width:100%">SIGN IN</button>
+  <div id="lerr" style="color:#ef4444;font-size:.85rem;margin-top:8px;text-align:center"></div>
+ </div>
+</div>
+<div id="toast"></div>
+<pre id="receipt"></pre>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getDatabase, ref, onValue, get, push, update, increment, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBHzpuRGip1KJoqeDm4wSgEpYJNvTzvJdI",
+  authDomain: "susara-pos.firebaseapp.com",
+  databaseURL: "https://susara-pos-default-rtdb.firebaseio.com",
+  projectId: "susara-pos",
+  storageBucket: "susara-pos.firebasestorage.app",
+  messagingSenderId: "928003326934",
+  appId: "1:928003326934:web:63d37126704fa557615a77"
+});
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+const defaultMenu = [
+            { name: "Black Coffee", price: 100, category: "Coffee & Hot Drinks" },
+            { name: "Milk Coffee", price: 120, category: "Coffee & Hot Drinks" },
+            { name: "Espresso", price: 110, category: "Coffee & Hot Drinks" },
+            { name: "Americano", price: 130, category: "Coffee & Hot Drinks" },
+            { name: "Cappuccino", price: 150, category: "Coffee & Hot Drinks" },
+            { name: "Café Latte", price: 160, category: "Coffee & Hot Drinks" },
+            { name: "Hot Chocolate", price: 180, category: "Coffee & Hot Drinks" },
+            { name: "Black Tea", price: 40, category: "Teas" },
+            { name: "Milk Tea", price: 50, category: "Teas" },
+            { name: "Lemon Tea", price: 60, category: "Teas" },
+            { name: "Ginger Honey Tea", price: 80, category: "Teas" },
+            { name: "Green Tea", price: 70, category: "Teas" },
+            { name: "Plain Omelette", price: 70, category: "Breakfast" },
+            { name: "Masala Omelette", price: 90, category: "Breakfast" },
+            { name: "Chana Fry", price: 100, category: "Breakfast" },
+            { name: "Chana Anda Set", price: 140, category: "Breakfast" },
+            { name: "Toast with Butter/Jam", price: 80, category: "Breakfast" },
+            { name: "Veg Steam Momo", price: 130, category: "Momos" },
+            { name: "Veg Fried Momo", price: 150, category: "Momos" },
+            { name: "Veg C Momo", price: 180, category: "Momos" },
+            { name: "Chicken Steam Momo", price: 180, category: "Momos" },
+            { name: "Chicken Fried Momo", price: 200, category: "Momos" },
+            { name: "Chicken C Momo", price: 230, category: "Momos" },
+            { name: "Chicken Jhol Momo", price: 210, category: "Momos" },
+            { name: "Veg Chowmein", price: 130, category: "Chowmein & Thukpa" },
+            { name: "Egg Chowmein", price: 160, category: "Chowmein & Thukpa" },
+            { name: "Chicken Chowmein", price: 190, category: "Chowmein & Thukpa" },
+            { name: "Mix Chowmein", price: 220, category: "Chowmein & Thukpa" },
+            { name: "Veg Thukpa", price: 140, category: "Chowmein & Thukpa" },
+            { name: "Chicken Thukpa", price: 200, category: "Chowmein & Thukpa" },
+            { name: "Veg Sandwich", price: 140, category: "Sandwiches & Burgers" },
+            { name: "Chicken Sandwich", price: 200, category: "Sandwiches & Burgers" },
+            { name: "Veg Burger", price: 160, category: "Sandwiches & Burgers" },
+            { name: "Chicken Burger", price: 220, category: "Sandwiches & Burgers" },
+            { name: "Chicken Kathi Roll", price: 210, category: "Sandwiches & Burgers" },
+            { name: "French Fries", price: 140, category: "Snacks" },
+            { name: "Peri Peri Fries", price: 170, category: "Snacks" },
+            { name: "Chicken Chilli", price: 280, category: "Snacks" },
+            { name: "Paneer Chilli", price: 260, category: "Snacks" },
+            { name: "Chicken Nuggets", price: 250, category: "Snacks" },
+            { name: "Plain Sweet Lassi", price: 100, category: "Lassi & Cold Drinks" },
+            { name: "Banana Lassi", price: 140, category: "Lassi & Cold Drinks" },
+            { name: "Mango Lassi", price: 160, category: "Lassi & Cold Drinks" },
+            { name: "Iced Cold Coffee", price: 180, category: "Lassi & Cold Drinks" },
+            { name: "Cold Drinks / Coke 500ml", price: 80, category: "Lassi & Cold Drinks" }
+        ];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad2 = n => String(n).padStart(2, '0');
+const localDate = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const load = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let menu = load('menuCache', []), cart = load('cart', []), cat = 'All', query = '', method = 'Cash', busy = false;
+
+function toast(msg, err) {
+  const t = $('toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', err ? 4500 : 2200);
+}
+
+onValue(ref(db, '.info/connected'), s => $('dot').classList.toggle('on', s.val() === true));
+
+const startMenu = () => onValue(ref(db, 'menu'), snap => {
+  const data = snap.val();
+  if (!data) { menu = []; render(); toast('Menu is empty - ask admin to load it', true); return; }
+  menu = Object.keys(data).map(id => ({ id, ...data[id] })).filter(i => i.name && Number(i.price) >= 0);
+  save('menuCache', menu);
+  render();
+});
+
+function render() { renderChips(); renderMenu(); renderCart(); }
+
+function renderChips() {
+  const cats = ['All', ...new Set(menu.map(i => i.category))];
+  if (!cats.includes(cat)) cat = 'All';
+  $('chips').innerHTML = cats.map(c => `<button class="chip ${c === cat ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
+}
+
+function renderMenu() {
+  const q = query.trim().toLowerCase();
+  const list = menu.filter(i => (cat === 'All' || i.category === cat) && (!q || i.name.toLowerCase().includes(q)));
+  if (!list.length) { $('menuContainer').innerHTML = `<div class="empty">${menu.length ? 'No items match.' : 'Loading menu…'}</div>`; return; }
+  const inCart = Object.fromEntries(cart.map(c => [c.id, c.qty]));
+  const cats = [...new Set(list.map(i => i.category))];
+  $('menuContainer').innerHTML = cats.map(c => `<div class="sec">${esc(c)}</div><div class="grid">` +
+    list.filter(i => i.category === c).map(i => `<div class="item" data-id="${esc(i.id)}">
+      ${inCart[i.id] ? `<span class="b">${inCart[i.id]}</span>` : ''}
+      <div class="n">${esc(i.name)}</div><div class="p">Rs ${Number(i.price)}</div></div>`).join('') + `</div>`).join('');
+}
+
+const subtotal = () => cart.reduce((s, i) => s + i.price * i.qty, 0);
+const discount = () => Math.min(subtotal(), Math.max(0, Number($('disc').value) || 0));
+const total = () => subtotal() - discount();
+
+function renderCart() {
+  save('cart', cart);
+  const d = $('drawer');
+  if (!cart.length) { d.style.display = 'none'; d.classList.remove('open'); renderMenu(); return; }
+  d.style.display = 'block';
+  $('cartItems').innerHTML = cart.map((i, x) => `<div class="row"><span class="nm">${esc(i.name)}</span>
+    <span class="qty"><button data-a="-" data-x="${x}">−</button><b>${i.qty}</b><button data-a="+" data-x="${x}">+</button></span>
+    <span class="amt">Rs ${i.price * i.qty}</span></div>`).join('');
+  $('cnt').textContent = `${cart.reduce((s, i) => s + i.qty, 0)} items`;
+  totals();
+  renderMenu();
+}
+
+function totals() {
+  const t = total();
+  $('barTotal').textContent = t; $('grand').textContent = t; $('sub').textContent = subtotal();
+  const cash = method === 'Cash';
+  $('cashRow').style.display = cash ? 'flex' : 'none';
+  const rv = Number($('recv').value) || 0;
+  $('chgRow').style.display = cash && rv ? 'flex' : 'none';
+  $('chg').textContent = Math.max(0, rv - t);
+  $('goBtn').disabled = busy;
+}
+
+$('menuContainer').addEventListener('click', e => {
+  const el = e.target.closest('.item'); if (!el) return;
+  const m = menu.find(i => i.id === el.dataset.id); if (!m) return;
+  const hit = cart.find(c => c.id === m.id);
+  hit ? hit.qty++ : cart.push({ id: m.id, name: m.name, price: Number(m.price), qty: 1 });
+  if (navigator.vibrate) navigator.vibrate(15);
+  renderCart();
+});
+$('chips').addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; cat = c.dataset.c; renderChips(); renderMenu(); });
+$('search').addEventListener('input', e => { query = e.target.value; renderMenu(); });
+$('bar').addEventListener('click', () => $('drawer').classList.toggle('open'));
+$('cartItems').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const i = cart[+b.dataset.x]; if (!i) return;
+  b.dataset.a === '+' ? i.qty++ : i.qty--;
+  if (i.qty <= 0) cart.splice(+b.dataset.x, 1);
+  renderCart();
+});
+$('pay').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  method = b.dataset.m;
+  [...$('pay').children].forEach(x => x.classList.toggle('on', x === b));
+  totals();
+});
+$('disc').addEventListener('input', totals);
+$('recv').addEventListener('input', totals);
+$('clrBtn').addEventListener('click', () => { if (confirm('Clear this order?')) resetOrder(); });
+$('goBtn').addEventListener('click', processOrder);
+
+function resetOrder() {
+  cart = []; $('note').value = ''; $('disc').value = ''; $('recv').value = '';
+  method = 'Cash'; [...$('pay').children].forEach((x, i) => x.classList.toggle('on', i === 0));
+  renderCart();
+}
+
+async function nextOrderNo(dateStr) {
+  try {
+    const r = await Promise.race([
+      runTransaction(ref(db, 'counters/' + dateStr), v => (v || 0) + 1),
+      new Promise((_, rej) => setTimeout(rej, 2500))
+    ]);
+    return r.snapshot.val();
+  } catch { return null; }
+}
+
+const line = (l, r, w = 32) => { l = String(l).slice(0, Math.max(1, w - String(r).length - 1)); return l + ' '.repeat(w - l.length - String(r).length) + r; };
+
+async function processOrder() {
+  if (!cart.length || busy) return;
+  const t = total();
+  const rv = Number($('recv').value) || 0;
+  if (method === 'Cash' && rv && rv < t) return toast('Cash received is less than total', true);
+  busy = true; totals();
+
+  const now = new Date(), dateStr = localDate(now);
+  const table = $('tableNum').value.trim() || '-';
+  const note = $('note').value.trim(), disc = discount(), sub = subtotal();
+  const no = await nextOrderNo(dateStr);
+  const items = cart.map(({ id, name, price, qty }) => ({ id, name, price, qty }));
+
+  const payload = {
+    orderNo: no, table, items, subtotal: sub, discount: disc, totalAmount: t,
+    payment: method, received: method === 'Cash' ? rv : t, change: method === 'Cash' && rv ? rv - t : 0, note,
+    timestamp: serverTimestamp(), dateStr, monthStr: dateStr.slice(0, 7), timeStr: now.toLocaleTimeString()
+  };
+  // One atomic write: the order + daily & monthly report totals + per-item sales
+  const key = push(ref(db, 'orders')).key;
+  const up = { ['orders/' + key]: payload };
+  for (const p of ['daily/' + dateStr, 'monthly/' + dateStr.slice(0, 7)]) {
+    const b = 'reports/' + p;
+    up[b + '/sales'] = increment(t); up[b + '/orders'] = increment(1); up[b + '/discount'] = increment(disc);
+    up[b + '/' + (method === 'Cash' ? 'cash' : 'digital')] = increment(t);
+    cart.forEach(i => {
+      up[`${b}/items/${i.id}/name`] = i.name;
+      up[`${b}/items/${i.id}/qty`] = increment(i.qty);
+      up[`${b}/items/${i.id}/revenue`] = increment(i.price * i.qty);
+    });
+  }
+  update(ref(db), up).catch(err => toast('Save failed: ' + err.message, true));
+
+  const W = 32, hr = '-'.repeat(W);
+  let r = 'SUSARA CAFFE'.padStart(20) + `\n${hr}\n`;
+  r += line('Table: ' + table, no ? 'Order #' + no : '') + `\n${now.toLocaleDateString()}  ${now.toLocaleTimeString()}\n${hr}\n`;
+  items.forEach(i => { r += line(`${i.qty} x ${i.name}`, i.price * i.qty) + '\n'; });
+  r += hr + '\n';
+  if (disc) r += line('Subtotal', sub) + '\n' + line('Discount', '-' + disc) + '\n';
+  r += line('TOTAL Rs', t) + '\n' + line('Paid by', method) + '\n';
+  if (method === 'Cash' && rv) r += line('Received', rv) + '\n' + line('Change', rv - t) + '\n';
+  if (note) r += `${hr}\nNote: ${note}\n`;
+  r += `${hr}\n` + 'Thank You! Visit Again'.padStart(27) + '\n\n\n';
+  $('receipt').textContent = r;
+
+  busy = false;
+  window.print();
+  resetOrder();
+  toast(no ? `Order #${no} recorded` : 'Order recorded');
+}
+
+render();
+
+let started = false, statsUnsub = [], statsDate = '';
+const stats = { sales: 0, orders: 0, cash: 0, digital: 0 };
+function renderStats() {
+  $('stSales').textContent = stats.sales; $('stOrders').textContent = stats.orders;
+  $('stCash').textContent = stats.cash; $('stDig').textContent = stats.digital;
+}
+function watchToday() {
+  const d = localDate(new Date());
+  if (d === statsDate) return;
+  statsUnsub.forEach(f => f()); statsDate = d;
+  Object.keys(stats).forEach(k => stats[k] = 0);
+  statsUnsub = Object.keys(stats).map(k =>
+    onValue(ref(db, `reports/daily/${d}/${k}`), s => { stats[k] = Number(s.val()) || 0; renderStats(); }, () => {}));
+  renderStats();
+}
+setInterval(() => { if (started) watchToday(); }, 60000);  // rolls over at midnight
+onAuthStateChanged(auth, async u => {
+  if (!u) { $('login').style.display = 'flex'; return; }
+  let ok = false;
+  try {
+    ok = (await get(ref(db, 'staff/' + u.uid + '/active'))).val() === true ||
+         (await get(ref(db, 'admins/' + u.uid))).val() === true;
+  } catch {}
+  if (!ok) { $('lerr').textContent = 'This account is deactivated or not registered. Contact admin.'; signOut(auth); return; }
+  $('login').style.display = 'none';
+  if (!started) {
+    started = true; startMenu(); watchToday();
+    // lock the terminal immediately if admin deactivates this user mid-shift
+    onValue(ref(db, 'staff/' + u.uid + '/active'), s => { if (s.val() === false) signOut(auth).then(() => location.reload()); });
+  }
+});
+$('loginBtn').addEventListener('click', async () => {
+  $('lerr').textContent = '';
+  try { await signInWithEmailAndPassword(auth, $('lemail').value.trim(), $('lpass').value); }
+  catch { $('lerr').textContent = 'Login failed. Check email and password.'; }
+});
+$('logout').addEventListener('click', () => { if (confirm('Log out of this terminal?')) signOut(auth).then(() => location.reload()); });
+</script>
+</body>
+</html>

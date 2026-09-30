@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Susara POS - Admin Management</title>
+    <style>
+        :root {
+            --admin-bg: #0f172a;
+            --card-bg: #ffffff;
+            --accent: #f97316;
+            --danger: #ef4444;
+            --success: #10b981;
+            --text-main: #1e293b;
+            --border-color: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        /* Login Screen */
+        #authScreen {
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            background: var(--admin-bg);
+        }
+
+        .auth-box {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            width: 320px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .form-field { margin-bottom: 14px; }
+        .form-field label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #475569; }
+        .form-field input, .form-field select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; }
+
+        .btn-admin {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Dashboard Navbar & Layout */
+        .dashboard-nav {
+            background: var(--admin-bg);
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-container {
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        .section-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .metric-card {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn-action {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+        }
+
+        .section-card { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th { background: #f8fafc; }
+
+        .tab-btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            background: #e2e8f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Print Styling for Reports */
+        @media print {
+            body * { visibility: hidden; }
+            #printableReport, #printableReport * { visibility: visible; }
+            #printableReport {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                color: black;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Authentication Screen -->
+    <div id="authScreen">
+        <div class="auth-box">
+            <h2 style="margin-top:0; text-align:center; color:#0f172a;">Admin Login</h2>
+            <div class="form-field">
+                <label>Email</label>
+                <input type="email" id="authEmail" placeholder="admin@susara.com">
+            </div>
+            <div class="form-field">
+                <label>Password</label>
+                <input type="password" id="authPassword" placeholder="••••••••">
+            </div>
+            <button class="btn-admin" onclick="loginAdmin()">SIGN IN</button>
+            <div id="authErr" style="color:#ef4444; font-size:0.8rem; margin-top:8px; text-align:center;"></div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Screen -->
+    <div id="dashboardScreen" style="display: none;">
+        <div class="dashboard-nav">
+            <span style="font-weight: bold;">🔒 Susara Caffe Admin Portal</span>
+            <button onclick="logoutAdmin()" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Logout</button>
+        </div>
+
+        <div class="admin-container">
+
+            <!-- Cash Register Management -->
+            <div class="section-card">
+                <h3>💵 Cash Register Balance (Opening & Closing)</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                    <div class="form-field">
+                        <label>Date</label>
+                        <input type="date" id="regDate">
+                    </div>
+                    <div class="form-field">
+                        <label>Opening Cash Balance (Rs)</label>
+                        <input type="number" id="regOpening" placeholder="0">
+                    </div>
+                    <div class="form-field">
+                        <label>Actual Closing Cash Counted (Rs)</label>
+                        <input type="number" id="regClosingActual" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label>Variance / Cashier Notes</label>
+                    <input type="text" id="regNotes" placeholder="e.g. Rs 50 short due to change discrepancy">
+                </div>
+                <button onclick="saveRegisterBalance()" class="btn-action" style="background: var(--success);">Save Cash Register Record</button>
+                <p id="regStatus" style="font-size: 0.85rem; font-weight: 600; color: #10b981; margin-top: 8px;"></p>
+            </div>
+
+            <!-- Sales Reports & Analytics -->
+            <div class="section-card" id="printableReport">
+                <div class="header-actions">
+                    <h3 style="margin:0;">📊 Sales Reports</h3>
+                    <span><button class="btn-action" style="background:#10b981;" onclick="rebuildReports()">Rebuild Saved Reports</button> <button class="btn-action btn-secondary" onclick="window.print()">Print Report</button></span>
+                </div>
+
+                <div class="tab-btn-group">
+                    <button class="tab-btn active" id="btnTabDaily" onclick="switchReportTab('daily')">Daily Report</button>
+                    <button class="tab-btn" id="btnTabMonthly" onclick="switchReportTab('monthly')">Monthly Report</button>
+                </div>
+
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+                    <div id="dailyFilterGroup">
+                        <label style="font-size:0.85rem; font-weight:600;">Select Date: </label>
+                        <input type="date" id="filterDate" onchange="renderReports()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px;">
+                    </div>
+                    <div id="monthlyFilterGroup" style="display: none;">
+                        <label style="font-size:0.85rem; font-weight:600;">Select Month: </label>
+                        <input type="month" id="filterMonth" onchange="renderReports()" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px;">
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <small style="color:#64748b;">Total Sales Revenue</small>
+                        <div id="repTotalSales" style="font-size:1.4rem; font-weight:bold; color:#1e293b;">Rs 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <small style="color:#64748b;">Total Orders Placed</small>
+                        <div id="repTotalOrders" style="font-size:1.4rem; font-weight:bold; color:#1e293b;">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <small style="color:#64748b;">Cash Sales</small>
+                        <div id="repCash" style="font-size:1.4rem; font-weight:bold; color:#1e293b;">Rs 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <small style="color:#64748b;">QR / Card Sales</small>
+                        <div id="repDigital" style="font-size:1.4rem; font-weight:bold; color:#1e293b;">Rs 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <small style="color:#64748b;">Discounts Given</small>
+                        <div id="repDisc" style="font-size:1.4rem; font-weight:bold; color:#1e293b;">Rs 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <small style="color:#64748b;">Cash Variance (Counted − Expected)</small>
+                        <div id="repVar" style="font-size:1.4rem; font-weight:bold; color:#1e293b;">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <small style="color:#64748b;">Opening Register Cash</small>
+                        <div id="repOpeningCash" style="font-size:1.4rem; font-weight:bold; color:#1e293b;">Rs 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <small style="color:#64748b;">Expected Total Cash in Drawer</small>
+                        <div id="repExpectedCash" style="font-size:1.4rem; font-weight:bold; color:#f97316;">Rs 0</div>
+                    </div>
+                </div>
+
+                <h4 style="margin:18px 0 0;">Item Sales</h4>
+                <table>
+                    <thead><tr><th>Item</th><th>Qty Sold</th><th>Revenue (before discount)</th></tr></thead>
+                    <tbody id="itemSalesBody"></tbody>
+                </table>
+                <h4 style="margin:18px 0 0;">Orders</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Time / Date</th>
+                            <th>Table #</th>
+                            <th>Items Purchased</th>
+                            <th>Payment</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Staff Accounts -->
+            <div class="section-card">
+                <h3 style="margin-top:0;">👥 Staff Accounts</h3>
+                <div style="display:grid; grid-template-columns: 1fr 1.5fr 1fr auto; gap:8px; margin-bottom:8px;">
+                    <input type="text" id="stName" placeholder="Staff name" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <input type="email" id="stEmail" placeholder="Login email" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <input type="text" id="stPass" placeholder="Password (min 6)" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <button onclick="createStaff()" class="btn-action">Create User</button>
+                </div>
+                <small style="color:#64748b;">Deactivated users are locked out of the terminal immediately. Share the email and password with the staff member privately.</small>
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="staffTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Menu & Pricing Manager -->
+            <div class="section-card">
+                <div class="header-actions">
+                    <h3 style="margin:0;">Menu & Pricing Manager</h3>
+                    <button class="btn-action" style="background:#10b981;" onclick="forceSeedMenu()">Reload Full Default Menu</button>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:8px; margin-bottom:12px;">
+                    <input type="text" id="newItemName" placeholder="Item Name" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <input type="number" id="newItemPrice" placeholder="Price (Rs)" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    <select id="newItemCat" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                        <option value="Coffee & Hot Drinks">Coffee & Hot Drinks</option>
+                        <option value="Teas">Teas</option>
+                        <option value="Breakfast">Breakfast</option>
+                        <option value="Momos">Momos</option>
+                        <option value="Chowmein & Thukpa">Chowmein & Thukpa</option>
+                        <option value="Sandwiches & Burgers">Sandwiches & Burgers</option>
+                        <option value="Snacks">Snacks</option>
+                        <option value="Lassi & Cold Drinks">Lassi & Cold Drinks</option>
+                    </select>
+                    <button onclick="addMenuItem()" class="btn-action">Add Item</button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Name</th>
+                            <th>Price (Rs)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menuTableBody"></tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Embedded Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, get, set, push, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHzpuRGip1KJoqeDm4wSgEpYJNvTzvJdI",
+            authDomain: "susara-pos.firebaseapp.com",
+            databaseURL: "https://susara-pos-default-rtdb.firebaseio.com",
+            projectId: "susara-pos",
+            storageBucket: "susara-pos.firebasestorage.app",
+            messagingSenderId: "928003326934",
+            appId: "1:928003326934:web:63d37126704fa557615a77"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        // Secondary app: lets admin create users without being signed out
+        const auth2 = getAuth(initializeApp(firebaseConfig, 'secondary'));
+        const db = getDatabase(app);
+
+        let activeTab = 'daily';
+        let allOrders = {};
+        let registerData = {};
+
+        const defaultMenu = [
+            { name: "Black Coffee", price: 100, category: "Coffee & Hot Drinks" },
+            { name: "Milk Coffee", price: 120, category: "Coffee & Hot Drinks" },
+            { name: "Espresso", price: 110, category: "Coffee & Hot Drinks" },
+            { name: "Americano", price: 130, category: "Coffee & Hot Drinks" },
+            { name: "Cappuccino", price: 150, category: "Coffee & Hot Drinks" },
+            { name: "Café Latte", price: 160, category: "Coffee & Hot Drinks" },
+            { name: "Hot Chocolate", price: 180, category: "Coffee & Hot Drinks" },
+            { name: "Black Tea", price: 40, category: "Teas" },
+            { name: "Milk Tea", price: 50, category: "Teas" },
+            { name: "Lemon Tea", price: 60, category: "Teas" },
+            { name: "Ginger Honey Tea", price: 80, category: "Teas" },
+            { name: "Green Tea", price: 70, category: "Teas" },
+            { name: "Plain Omelette", price: 70, category: "Breakfast" },
+            { name: "Masala Omelette", price: 90, category: "Breakfast" },
+            { name: "Chana Fry", price: 100, category: "Breakfast" },
+            { name: "Chana Anda Set", price: 140, category: "Breakfast" },
+            { name: "Toast with Butter/Jam", price: 80, category: "Breakfast" },
+            { name: "Veg Steam Momo", price: 130, category: "Momos" },
+            { name: "Veg Fried Momo", price: 150, category: "Momos" },
+            { name: "Veg C Momo", price: 180, category: "Momos" },
+            { name: "Chicken Steam Momo", price: 180, category: "Momos" },
+            { name: "Chicken Fried Momo", price: 200, category: "Momos" },
+            { name: "Chicken C Momo", price: 230, category: "Momos" },
+            { name: "Chicken Jhol Momo", price: 210, category: "Momos" },
+            { name: "Veg Chowmein", price: 130, category: "Chowmein & Thukpa" },
+            { name: "Egg Chowmein", price: 160, category: "Chowmein & Thukpa" },
+            { name: "Chicken Chowmein", price: 190, category: "Chowmein & Thukpa" },
+            { name: "Mix Chowmein", price: 220, category: "Chowmein & Thukpa" },
+            { name: "Veg Thukpa", price: 140, category: "Chowmein & Thukpa" },
+            { name: "Chicken Thukpa", price: 200, category: "Chowmein & Thukpa" },
+            { name: "Veg Sandwich", price: 140, category: "Sandwiches & Burgers" },
+            { name: "Chicken Sandwich", price: 200, category: "Sandwiches & Burgers" },
+            { name: "Veg Burger", price: 160, category: "Sandwiches & Burgers" },
+            { name: "Chicken Burger", price: 220, category: "Sandwiches & Burgers" },
+            { name: "Chicken Kathi Roll", price: 210, category: "Sandwiches & Burgers" },
+            { name: "French Fries", price: 140, category: "Snacks" },
+            { name: "Peri Peri Fries", price: 170, category: "Snacks" },
+            { name: "Chicken Chilli", price: 280, category: "Snacks" },
+            { name: "Paneer Chilli", price: 260, category: "Snacks" },
+            { name: "Chicken Nuggets", price: 250, category: "Snacks" },
+            { name: "Plain Sweet Lassi", price: 100, category: "Lassi & Cold Drinks" },
+            { name: "Banana Lassi", price: 140, category: "Lassi & Cold Drinks" },
+            { name: "Mango Lassi", price: 160, category: "Lassi & Cold Drinks" },
+            { name: "Iced Cold Coffee", price: 180, category: "Lassi & Cold Drinks" },
+            { name: "Cold Drinks / Coke 500ml", price: 80, category: "Lassi & Cold Drinks" }
+        ];
+
+        // Set Default Dates in Inputs
+        const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const nd = new Date();
+        const todayStr = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,'0')}-${String(nd.getDate()).padStart(2,'0')}`;
+        const thisMonthStr = todayStr.substring(0, 7);
+        
+        document.getElementById('regDate').value = todayStr;
+        document.getElementById('filterDate').value = todayStr;
+        document.getElementById('filterMonth').value = thisMonthStr;
+
+        onAuthStateChanged(auth, async (user) => {
+            const authScreen = document.getElementById('authScreen');
+            const dashboardScreen = document.getElementById('dashboardScreen');
+
+            if (user) {
+                let isAdmin = false;
+                try { isAdmin = (await get(ref(db, 'admins/' + user.uid))).val() === true; } catch (e) {}
+                if (!isAdmin) {
+                    document.getElementById('authErr').innerText = 'This account is not an admin.';
+                    signOut(auth);
+                    return;
+                }
+                if (authScreen) authScreen.style.display = 'none';
+                if (dashboardScreen) dashboardScreen.style.display = 'block';
+                initAdminData();
+            } else {
+                if (authScreen) authScreen.style.display = 'flex';
+                if (dashboardScreen) dashboardScreen.style.display = 'none';
+            }
+        });
+
+        window.loginAdmin = async function() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const errEl = document.getElementById('authErr');
+
+            try {
+                if (errEl) errEl.innerText = "";
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (err) {
+                if (errEl) errEl.innerText = err.message;
+            }
+        };
+
+        window.logoutAdmin = function() {
+            signOut(auth);
+        };
+
+        function initAdminData() {
+            // Live Menu Listener
+            onValue(ref(db, 'menu'), (snapshot) => {
+                const data = snapshot.val();
+                const tbody = document.getElementById('menuTableBody');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (data) {
+                    Object.keys(data).sort((a, b) => (data[a].category || '').localeCompare(data[b].category || '') || (data[a].name || '').localeCompare(data[b].name || '')).forEach(id => {
+                        const item = data[id];
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${esc(item.category)}</td>
+                                <td><b>${esc(item.name)}</b></td>
+                                <td><input type="number" min="0" value="${Number(item.price)}" style="width:80px; padding:4px;" onchange="updatePrice('${esc(id)}', this.value)"></td>
+                                <td><button onclick="removeItem('${esc(id)}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Remove</button></td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    forceSeedMenu();
+                }
+            });
+
+            // Live Staff Listener
+            onValue(ref(db, 'staff'), (snapshot) => {
+                const data = snapshot.val() || {};
+                document.getElementById('staffTableBody').innerHTML = Object.keys(data).map(uid => {
+                    const u = data[uid];
+                    const badge = u.active
+                        ? '<b style="color:#10b981;">● Active</b>'
+                        : '<b style="color:#ef4444;">● Deactivated</b>';
+                    return `<tr>
+                        <td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${badge}</td>
+                        <td>
+                            <button onclick="toggleStaff('${esc(uid)}', ${!u.active})" style="background:${u.active ? '#ef4444' : '#10b981'}; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">${u.active ? 'Deactivate' : 'Activate'}</button>
+                            <button onclick="resetStaffPw('${esc(u.email)}')" style="background:#64748b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Reset Password</button>
+                        </td></tr>`;
+                }).join('') || '<tr><td colspan="4" style="text-align:center;color:#64748b;">No staff yet.</td></tr>';
+            });
+
+            // Live Orders Listener
+            onValue(ref(db, 'orders'), (snapshot) => {
+                allOrders = snapshot.val() || {};
+                renderReports();
+            });
+
+            // Live Register Balance Listener
+            onValue(ref(db, 'cash_register'), (snapshot) => {
+                registerData = snapshot.val() || {};
+                renderReports();
+            });
+        }
+
+        window.switchReportTab = function(type) {
+            activeTab = type;
+            document.getElementById('btnTabDaily').classList.toggle('active', type === 'daily');
+            document.getElementById('btnTabMonthly').classList.toggle('active', type === 'monthly');
+            document.getElementById('dailyFilterGroup').style.display = type === 'daily' ? 'block' : 'none';
+            document.getElementById('monthlyFilterGroup').style.display = type === 'monthly' ? 'block' : 'none';
+            renderReports();
+        };
+
+        window.renderReports = function() {
+            const tbody = document.getElementById('reportTableBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            let totalSales = 0;
+            let totalOrdersCount = 0;
+
+            const targetDate = document.getElementById('filterDate').value;
+            const targetMonth = document.getElementById('filterMonth').value;
+
+            let cashSales = 0, digitalSales = 0, totalDisc = 0;
+            const itemAgg = {};
+            const ids = Object.keys(allOrders).sort((x, y) => (allOrders[y].timestamp || 0) - (allOrders[x].timestamp || 0));
+            ids.forEach(id => {
+                const o = allOrders[id];
+                const isMatch = activeTab === 'daily'
+                    ? o.dateStr === targetDate
+                    : (o.monthStr === targetMonth || (o.dateStr && o.dateStr.startsWith(targetMonth)));
+                if (!isMatch) return;
+
+                const amt = Number(o.totalAmount || 0);
+                const pay = o.payment || 'Cash';
+                totalSales += amt;
+                totalOrdersCount++;
+                totalDisc += Number(o.discount || 0);
+                pay === 'Cash' ? cashSales += amt : digitalSales += amt;
+                (o.items || []).forEach(i => {
+                    const a = itemAgg[i.name] || (itemAgg[i.name] = { qty: 0, rev: 0 });
+                    a.qty += Number(i.qty); a.rev += Number(i.price) * Number(i.qty);
+                });
+
+                const itemsText = o.items ? o.items.map(i => `${esc(i.name)} (${Number(i.qty)})`).join(', ') : '';
+                const noteText = o.note ? `<br><small style="color:#64748b;">Note: ${esc(o.note)}</small>` : '';
+                const timeOrDateStr = activeTab === 'daily' ? (o.timeStr || '-') : `${o.dateStr || '-'} ${o.timeStr || ''}`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${o.orderNo ? '#' + Number(o.orderNo) : '-'}</td>
+                        <td>${esc(timeOrDateStr)}</td>
+                        <td>${esc(o.table)}</td>
+                        <td>${itemsText}${noteText}</td>
+                        <td>${esc(pay)}</td>
+                        <td><b>Rs ${amt}</b></td>
+                    </tr>
+                `;
+            });
+
+            if (!totalOrdersCount) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b; padding:24px;">No orders for this period.</td></tr>';
+
+            document.getElementById('itemSalesBody').innerHTML = Object.entries(itemAgg).sort((a, b) => b[1].qty - a[1].qty)
+                .map(([n, a]) => `<tr><td>${esc(n)}</td><td>${a.qty}</td><td>Rs ${a.rev}</td></tr>`).join('') ||
+                '<tr><td colspan="3" style="text-align:center;color:#64748b;">No sales.</td></tr>';
+
+            // Register lookup (cash drawer only expects CASH sales, not QR/Card)
+            const isDaily = activeTab === 'daily';
+            const regEntry = registerData[targetDate] || {};
+            const openingCash = Number(regEntry.opening || 0);
+            const expectedCash = openingCash + cashSales;
+            const hasClosing = isDaily && regEntry.closingActual !== undefined;
+
+            document.getElementById('repTotalSales').innerText = `Rs ${totalSales}`;
+            document.getElementById('repTotalOrders').innerText = totalOrdersCount;
+            document.getElementById('repCash').innerText = `Rs ${cashSales}`;
+            document.getElementById('repDigital').innerText = `Rs ${digitalSales}`;
+            document.getElementById('repDisc').innerText = `Rs ${totalDisc}`;
+            document.getElementById('repOpeningCash').innerText = isDaily ? `Rs ${openingCash}` : '-';
+            document.getElementById('repExpectedCash').innerText = isDaily ? `Rs ${expectedCash}` : '-';
+            const v = hasClosing ? Number(regEntry.closingActual) - expectedCash : null;
+            const vEl = document.getElementById('repVar');
+            vEl.innerText = v === null ? '-' : `${v > 0 ? '+' : ''}Rs ${v}`;
+            vEl.style.color = v === null || v === 0 ? '#1e293b' : (v < 0 ? '#ef4444' : '#10b981');
+        };
+
+        window.createStaff = async function() {
+            const name = document.getElementById('stName').value.trim();
+            const email = document.getElementById('stEmail').value.trim();
+            const pass = document.getElementById('stPass').value;
+            if (!name || !email || pass.length < 6) { alert('Enter name, email and a password of at least 6 characters.'); return; }
+            try {
+                const cred = await createUserWithEmailAndPassword(auth2, email, pass);
+                await set(ref(db, 'staff/' + cred.user.uid), { name, email, active: true, createdAt: new Date().toISOString() });
+                await signOut(auth2);
+                ['stName', 'stEmail', 'stPass'].forEach(id => document.getElementById(id).value = '');
+                alert(`Staff user created.\nEmail: ${email}\nPassword: ${pass}`);
+            } catch (e) { alert('Could not create user: ' + e.message); }
+        };
+
+        window.toggleStaff = async function(uid, active) {
+            if (!confirm(active ? 'Activate this user?' : 'Deactivate this user? They will be locked out immediately.')) return;
+            await update(ref(db, 'staff/' + uid), { active });
+        };
+
+        window.resetStaffPw = async function(email) {
+            if (!confirm('Send a password reset email to ' + email + '?')) return;
+            try { await sendPasswordResetEmail(auth, email); alert('Reset email sent.'); }
+            catch (e) { alert('Failed: ' + e.message); }
+        };
+
+        window.rebuildReports = async function() {
+            if (!confirm('Rebuild all daily & monthly reports from saved orders?')) return;
+            const mk = () => ({ sales: 0, orders: 0, cash: 0, digital: 0, discount: 0, items: {} });
+            const daily = {}, monthly = {};
+            Object.values(allOrders).forEach(o => {
+                if (!o.dateStr) return;
+                const t = Number(o.totalAmount || 0);
+                [[daily, o.dateStr], [monthly, o.monthStr || o.dateStr.slice(0, 7)]].forEach(([m, k]) => {
+                    const r = m[k] || (m[k] = mk());
+                    r.sales += t; r.orders++; r.discount += Number(o.discount || 0);
+                    (o.payment || 'Cash') === 'Cash' ? r.cash += t : r.digital += t;
+                    (o.items || []).forEach(i => {
+                        const id = i.id || String(i.name).replace(/[.$#\[\]\/]/g, '_');
+                        const x = r.items[id] || (r.items[id] = { name: i.name, qty: 0, revenue: 0 });
+                        x.qty += Number(i.qty); x.revenue += Number(i.price) * Number(i.qty);
+                    });
+                });
+            });
+            try { await set(ref(db, 'reports'), { daily, monthly }); alert('Reports rebuilt and saved to Firebase.'); }
+            catch (e) { alert('Failed: ' + e.message); }
+        };
+
+        window.saveRegisterBalance = async function() {
+            const date = document.getElementById('regDate').value;
+            const opening = Number(document.getElementById('regOpening').value || 0);
+            const closingActual = Number(document.getElementById('regClosingActual').value || 0);
+            const notes = document.getElementById('regNotes').value;
+
+            if (!date) {
+                alert("Please select a date for the register balance.");
+                return;
+            }
+            if (opening < 0 || closingActual < 0) {
+                alert("Cash amounts cannot be negative.");
+                return;
+            }
+
+            await set(ref(db, `cash_register/${date}`), {
+                opening,
+                closingActual,
+                notes,
+                updatedAt: new Date().toISOString()
+            });
+
+            const statusEl = document.getElementById('regStatus');
+            statusEl.innerText = `Successfully recorded cash register balance for ${date}!`;
+            setTimeout(() => { statusEl.innerText = ""; }, 4000);
+        };
+
+        window.forceSeedMenu = async function() {
+            if (confirm("Reset/reload all default Susara Caffe menu items?")) {
+                await set(ref(db, 'menu'), null);
+                const menuRef = ref(db, 'menu');
+                for (const item of defaultMenu) {
+                    await push(menuRef, item);
+                }
+            }
+        };
+
+        window.addMenuItem = async function() {
+            const name = document.getElementById('newItemName').value.trim();
+            const price = Number(document.getElementById('newItemPrice').value);
+            const category = document.getElementById('newItemCat').value;
+
+            if (!name || price <= 0) {
+                alert("Please enter a valid item name and price.");
+                return;
+            }
+
+            await push(ref(db, 'menu'), { name, price, category });
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemPrice').value = '';
+        };
+
+        window.updatePrice = async function(id, val) {
+            await update(ref(db, `menu/${id}`), { price: Number(val) });
+        };
+
+        window.removeItem = async function(id) {
+            if (confirm("Remove this menu item?")) {
+                await remove(ref(db, `menu/${id}`));
+            }
+        };
+    </script>
+</body>
+</html>
