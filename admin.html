@@ -165,6 +165,7 @@
                 color: black;
             }
         }
+    body:not(.authed)>*:not(#authScreen){display:none!important}
     </style>
 </head>
 <body>
@@ -458,10 +459,12 @@ const ICONS = [
                     return;
                 }
                 if (authScreen) authScreen.style.display = 'none';
+                document.body.classList.add('authed');
                 if (dashboardScreen) dashboardScreen.style.display = 'block';
                 initAdminData();
             } else {
                 if (authScreen) authScreen.style.display = 'flex';
+                document.body.classList.remove('authed');
                 if (dashboardScreen) dashboardScreen.style.display = 'none';
             }
         });
