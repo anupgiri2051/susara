@@ -118,6 +118,12 @@ nav{padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-r
  #cartItems .empty{color:#94a3b8;padding:30px 10px}
 }
 @media print{body{padding:0!important}}
+.item{padding:8px 8px 12px;justify-content:flex-start}
+.item .ph{height:88px;border-radius:8px;overflow:hidden;background:#fff7ed;display:flex;align-items:center;justify-content:center;font-size:2.6rem;margin-bottom:8px}
+.item .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.item .p{margin-top:auto;padding-top:6px}
+@media (max-width:480px){.item .ph{height:74px;font-size:2.2rem}}
+@media (min-width:1000px){.item .ph{height:104px}}
 </style>
 </head>
 <body>
@@ -230,6 +236,18 @@ const defaultMenu = [
             { name: "Cold Drinks / Coke 500ml", price: 80, category: "Lassi & Cold Drinks" }
         ];
 
+const ICONS = [
+  [/iced|cold coffee/i,'🧋','Iced coffee'],[/coke|cold drink/i,'🥤','Coca-Cola'],[/espresso/i,'☕','Espresso'],
+  [/americano/i,'☕','Caffè Americano'],[/cappuccino/i,'☕','Cappuccino'],[/latte/i,'☕','Caffè latte'],
+  [/coffee/i,'☕','Coffee'],[/chocolate/i,'🍫','Hot chocolate'],[/green tea/i,'🍵','Green tea'],
+  [/black tea/i,'🍵','Black tea'],[/tea/i,'🍵','Tea'],[/omelette/i,'🍳','Omelette'],[/chana/i,'🫘','Chana masala'],
+  [/toast/i,'🍞','Toast'],[/momo/i,'🥟','Momo (food)'],[/chow ?mein/i,'🍜','Chow mein'],[/thukpa/i,'🍜','Thukpa'],
+  [/sandwich/i,'🥪','Sandwich'],[/burger/i,'🍔','Hamburger'],[/roll/i,'🌯','Kati roll'],[/fries/i,'🍟','French fries'],
+  [/nugget/i,'🍗','Chicken nugget'],[/paneer/i,'🧀','Paneer'],[/chilli/i,'🍗','Chili chicken'],
+  [/mango/i,'🥭','Mango lassi'],[/banana/i,'🍌','Lassi'],[/lassi/i,'🥛','Lassi'],[/egg|anda/i,'🥚','Egg as food']
+];
+const iconFor = n => (ICONS.find(x => x[0].test(n || '')) || [0, '🍽️'])[1];
+const okPhoto = p => typeof p === 'string' && /^(data:image\/|https:\/\/)/.test(p);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad2 = n => String(n).padStart(2, '0');
@@ -271,7 +289,7 @@ function renderMenu() {
   $('menuContainer').innerHTML = cats.map(c => `<div class="sec">${esc(c)}</div><div class="grid">` +
     list.filter(i => i.category === c).map(i => `<div class="item" data-id="${esc(i.id)}">
       ${inCart[i.id] ? `<span class="b">${inCart[i.id]}</span>` : ''}
-      <div class="n">${esc(i.name)}</div><div class="p">Rs ${Number(i.price)}</div></div>`).join('') + `</div>`).join('');
+      <div class="ph">${okPhoto(i.photo) ? `<img loading="lazy" alt="" src="${esc(i.photo)}">` : iconFor(i.name)}</div><div class="n">${esc(i.name)}</div><div class="p">Rs ${Number(i.price)}</div></div>`).join('') + `</div>`).join('');
 }
 
 const subtotal = () => cart.reduce((s, i) => s + i.price * i.qty, 0);

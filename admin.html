@@ -319,7 +319,7 @@
             <div class="section-card">
                 <div class="header-actions">
                     <h3 style="margin:0;">Menu & Pricing Manager</h3>
-                    <button class="btn-action" style="background:#10b981;" onclick="forceSeedMenu()">Reload Full Default Menu</button>
+                    <span><button id="autoPhotoBtn" class="btn-action" style="background:#3b82f6;" onclick="autoPhotos()">📷 Auto-fill Photos</button> <button class="btn-action" style="background:#10b981;" onclick="forceSeedMenu()">Reload Full Default Menu</button></span>
                 </div>
 
                 <div style="display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:8px; margin-bottom:12px;">
@@ -333,6 +333,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>Photo</th>
                             <th>Category</th>
                             <th>Name</th>
                             <th>Price (Rs)</th>
@@ -421,6 +422,20 @@
         ];
 
         // Set Default Dates in Inputs
+const ICONS = [
+          [/iced|cold coffee/i,'🧋','Iced coffee'],[/coke|cold drink/i,'🥤','Coca-Cola'],[/espresso/i,'☕','Espresso'],
+          [/americano/i,'☕','Caffè Americano'],[/cappuccino/i,'☕','Cappuccino'],[/latte/i,'☕','Caffè latte'],
+          [/coffee/i,'☕','Coffee'],[/chocolate/i,'🍫','Hot chocolate'],[/green tea/i,'🍵','Green tea'],
+          [/black tea/i,'🍵','Black tea'],[/tea/i,'🍵','Tea'],[/omelette/i,'🍳','Omelette'],[/chana/i,'🫘','Chana masala'],
+          [/toast/i,'🍞','Toast'],[/momo/i,'🥟','Momo (food)'],[/chow ?mein/i,'🍜','Chow mein'],[/thukpa/i,'🍜','Thukpa'],
+          [/sandwich/i,'🥪','Sandwich'],[/burger/i,'🍔','Hamburger'],[/roll/i,'🌯','Kati roll'],[/fries/i,'🍟','French fries'],
+          [/nugget/i,'🍗','Chicken nugget'],[/paneer/i,'🧀','Paneer'],[/chilli/i,'🍗','Chili chicken'],
+          [/mango/i,'🥭','Mango lassi'],[/banana/i,'🍌','Lassi'],[/lassi/i,'🥛','Lassi'],[/egg|anda/i,'🥚','Egg as food']
+        ];
+        const iconFor = n => (ICONS.find(x => x[0].test(n || '')) || [0, '🍽️'])[1];
+        const okPhoto = p => typeof p === 'string' && /^(data:image\/|https:\/\/)/.test(p);
+        
+        let menuData = {};
         const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const nd = new Date();
         const todayStr = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,'0')}-${String(nd.getDate()).padStart(2,'0')}`;
@@ -477,6 +492,7 @@
 
                 tbody.innerHTML = '';
 
+                menuData = data || {};
                 const cats = [...new Set([...defaultMenu.map(i => i.category), ...Object.values(data || {}).map(i => i.category)])];
                 document.getElementById('catList').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
 
@@ -485,6 +501,10 @@
                         const item = data[id];
                         tbody.innerHTML += `
                             <tr>
+                                <td style="white-space:nowrap;">
+                                    <div style="width:64px;height:48px;border-radius:6px;overflow:hidden;background:#fff7ed;display:flex;align-items:center;justify-content:center;font-size:1.7rem;">${okPhoto(item.photo) ? `<img src="${esc(item.photo)}" style="width:100%;height:100%;object-fit:cover;">` : iconFor(item.name)}</div>
+                                    <label style="font-size:.75rem;color:#f97316;cursor:pointer;font-weight:600;">Change<input type="file" accept="image/*" hidden onchange="uploadPhoto('${esc(id)}', this)"></label>${item.photo ? ` · <a href="#" onclick="removePhoto('${esc(id)}');return false;" style="font-size:.75rem;color:#ef4444;">Remove</a>` : ''}
+                                </td>
                                 <td><input id="ec_${esc(id)}" list="catList" value="${esc(item.category)}" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; width:100%;"></td>
                                 <td><input id="en_${esc(id)}" value="${esc(item.name)}" maxlength="60" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; width:100%; font-weight:600;"></td>
                                 <td><input id="ep_${esc(id)}" type="number" min="0" value="${Number(item.price)}" style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; width:100%; min-width:80px;"></td>
@@ -688,7 +708,7 @@
         };
 
         window.forceSeedMenu = async function() {
-            if (confirm("Reset/reload all default Susara Caffe menu items?")) {
+            if (confirm("Reset/reload all default Susara Caffe menu items? (Custom items and photos will be removed.)")) {
                 await set(ref(db, 'menu'), null);
                 const menuRef = ref(db, 'menu');
                 for (const item of defaultMenu) {
@@ -725,6 +745,59 @@
                 btn.textContent = 'Saved ✓';
                 setTimeout(() => { btn.textContent = 'Save'; }, 1500);
             } catch (e) { alert('Could not save: ' + e.message); }
+        };
+
+        // Resize any image source to a small 4:3 JPEG data URL (keeps the database light)
+        function toThumb(src, cors) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                if (cors) img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    const W = 320, H = 240, c = document.createElement('canvas');
+                    c.width = W; c.height = H;
+                    const k = Math.max(W / img.width, H / img.height), w = img.width * k, h = img.height * k;
+                    c.getContext('2d').drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+                    try { resolve(c.toDataURL('image/jpeg', 0.7)); } catch (e) { reject(e); }
+                };
+                img.onerror = () => reject(new Error('image load failed'));
+                img.src = src;
+            });
+        }
+
+        window.uploadPhoto = async function(id, input) {
+            const f = input.files[0]; if (!f) return;
+            const url = URL.createObjectURL(f);
+            try { await update(ref(db, 'menu/' + id), { photo: await toThumb(url) }); }
+            catch (e) { alert('Could not save photo: ' + e.message); }
+            URL.revokeObjectURL(url); input.value = '';
+        };
+
+        window.removePhoto = async function(id) {
+            if (confirm('Remove this photo?')) await update(ref(db, 'menu/' + id), { photo: null });
+        };
+
+        // Looks up a matching dish photo on Wikipedia for every item that has no photo yet
+        window.autoPhotos = async function() {
+            const btn = document.getElementById('autoPhotoBtn');
+            const todo = Object.keys(menuData).filter(id => !menuData[id].photo);
+            if (!todo.length) { alert('All items already have photos.'); return; }
+            if (!confirm(`Try to find photos for ${todo.length} items? Review them afterwards - use Change/Remove to fix any wrong picture.`)) return;
+            const cache = {}; let done = 0, added = 0;
+            for (const id of todo) {
+                btn.textContent = `Working… ${++done}/${todo.length}`;
+                const hit = ICONS.find(x => x[0].test(menuData[id].name || ''));
+                if (!hit) continue;
+                try {
+                    if (!(hit[2] in cache)) {
+                        const r = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(hit[2]));
+                        const j = await r.json();
+                        cache[hit[2]] = j.thumbnail ? await toThumb(j.thumbnail.source, true) : null;
+                    }
+                    if (cache[hit[2]]) { await update(ref(db, 'menu/' + id), { photo: cache[hit[2]] }); added++; }
+                } catch (e) { cache[hit[2]] = null; }
+            }
+            btn.textContent = '📷 Auto-fill Photos';
+            alert(`Added photos to ${added} of ${todo.length} items. The rest show an automatic icon - use Change to upload your own.`);
         };
 
         window.updatePrice = async function(id, val) {
